@@ -1,7 +1,7 @@
 # Mathematical Expression Lexer
 
 ## Course: Formal Languages & Finite Automata
-### Author: [Cvasiuc Dmitrii]
+### Author: Cvasiuc Dmitrii
 
 ---
 
