@@ -1,20 +1,33 @@
 # Mathematical Expression Lexer
 
 ## Course: Formal Languages & Finite Automata
+
 ### Author: Cvasiuc Dmitrii
 
 ---
 
 ## Overview
-This project implements a lexical analyzer (lexer/scanner) for mathematical expressions. The lexer transforms input strings containing mathematical expressions into a sequence of tokens that can be used for further processing, such as parsing and evaluation.
+
+This project implements a **lexical analyzer (lexer/scanner)** for mathematical expressions. The lexer reads a raw string containing a mathematical expression and breaks it down into a **sequence of tokens**—structured objects representing numbers, operators, and functions. These tokens can then be fed into a parser for further processing.
+
+---
 
 ## Theory Behind Lexical Analysis
 
-Lexical analysis is the process of converting a sequence of characters into a sequence of tokens. The lexer operates as a finite state machine, transitioning between states as it reads characters from the input.
+**Lexical analysis** is the process of converting a sequence of characters into a sequence of tokens. This process is often the first step in the compilation or interpretation of source code.
+
+The lexer operates like a **finite state machine (FSM)**:
+
+* It reads one character at a time.
+* Based on the current character, it decides which type of token is being processed.
+* It collects the necessary characters to form that token.
+* Then, it creates a token object and moves to the next part of the input.
+
+---
 
 ## Implementation Details
 
-### Token Class
+### `Token` Class
 
 ```python
 class Token:
@@ -22,20 +35,41 @@ class Token:
         self.type = token_type
         self.value = value
         self.position = position
+
+    def __repr__(self):
+        return f"Token({self.type}, {repr(self.value)}, pos={self.position})"
 ```
+
+* `token_type`: a string that describes what kind of token it is (e.g., `"INTEGER"`, `"PLUS"`).
+* `value`: the actual content of the token (e.g., the number `3.14` or string `"sin"`).
+* `position`: a tuple to help identify where in the input this token appeared (line, column). Useful for debugging or error reporting.
+
+---
 
 ### Selected Token Types
 
 ```python
-# Token types (abbreviated)
+# Token types
 INTEGER = 'INTEGER'
 FLOAT = 'FLOAT'
 PLUS = 'PLUS'
 MINUS = 'MINUS'
-# ...
+MUL = 'MUL'
+DIV = 'DIV'
+LPAREN = 'LPAREN'
+RPAREN = 'RPAREN'
+SIN = 'SIN'
+COS = 'COS'
+SQRT = 'SQRT'
+LOG = 'LOG'
+EOF = 'EOF'  # End of file/input
 ```
 
-### Number Parsing
+Each constant represents a specific token that the lexer can identify. This separation of type names makes the code more readable and easier to extend.
+
+---
+
+### Number Parsing Function
 
 ```python
 def number(self):
@@ -44,19 +78,30 @@ def number(self):
     
     while self.current_char is not None and (self.current_char.isdigit() or self.current_char == '.'):
         if self.current_char == '.':
+            if is_float:  # Prevent multiple dots
+                raise Exception("Invalid number format")
             is_float = True
         result += self.current_char
         self.advance()
         
-    return Token(Lexer.FLOAT if is_float else Lexer.INTEGER, 
+    return Token(FLOAT if is_float else INTEGER, 
                  float(result) if is_float else int(result), 
                  (self.line, self.column))
 ```
 
-### Function Recognition
+* **Purpose**: Parses both integers and floating-point numbers.
+* **Key logic**:
+
+  * Iterates through digits and a possible decimal point.
+  * Converts the final string into either `int` or `float`.
+  * Tracks whether the number is a float using `is_float`.
+  * Returns a `Token` with appropriate type and value.
+
+---
+
+### Recognizing Reserved Functions
 
 ```python
-# Reserved keywords
 KEYWORDS = {
     'sin': SIN,
     'cos': COS,
@@ -65,49 +110,104 @@ KEYWORDS = {
 }
 ```
 
-### Tokenization Example
+When a sequence of letters (an identifier) is found, it’s checked against this dictionary:
+
+* If it's a known mathematical function like `"sin"` or `"log"`, the lexer returns the associated token.
+* Otherwise, this could be extended in the future to support user-defined variables.
+
+---
+
+### Example of Tokenizing Input
 
 ```python
-# Example usage
 lexer = Lexer("sin(0.5) + 2 * 3")
 tokens = lexer.tokenize()
 for token in tokens:
     print(token)
-
-# Output:
-# Token(SIN, 'sin', pos=(1, 1))
-# Token(LPAREN, '(', pos=(1, 4))
-# ...
 ```
+
+**Expected Output**:
+
+```
+Token(SIN, 'sin', pos=(1, 1))
+Token(LPAREN, '(', pos=(1, 4))
+Token(FLOAT, 0.5, pos=(1, 5))
+Token(RPAREN, ')', pos=(1, 8))
+Token(PLUS, '+', pos=(1, 10))
+Token(INTEGER, 2, pos=(1, 12))
+Token(MUL, '*', pos=(1, 14))
+Token(INTEGER, 3, pos=(1, 16))
+```
+
+Each token is printed with its type, value, and location—very useful for debugging and parser integration.
+
+---
 
 ## Usage Examples
 
+### Basic Tokenization
+
 ```python
-# Basic usage
 lexer = Lexer("3 + 4.5 * 2")
 tokens = lexer.tokenize()
+```
 
-# Interactive mode
+This will produce tokens for `3`, `+`, `4.5`, `*`, and `2`.
+
+### Interactive REPL Mode
+
+```python
 while True:
     text = input('> ')
-    if not text: continue
+    if not text:
+        continue
     tokens = Lexer(text).tokenize()
     for token in tokens:
         print(token)
 ```
 
+This allows you to test expressions live in the console and see how they are tokenized.
+
+---
+
 ## Conclusion
 
-This lexer successfully implements a tokenizer for mathematical expressions by applying concepts from formal languages and finite automata. The implementation demonstrates how to:
+This lexer successfully implements a tokenizer for mathematical expressions by applying key **theoretical concepts** from formal languages and finite automata:
 
-1. **Create a finite state machine** for recognizing different token patterns
-2. **Handle multiple token types** including numbers, operators, and functions
-3. **Maintain position information** for detailed error reporting
-4. **Process input streams** character by character with lookahead capability
+### Key Concepts Demonstrated
 
-The lexer serves as a foundation for a potential expression parser and evaluator. Through this project, we've seen how theoretical concepts of lexical analysis can be applied to solve a practical programming problem. The implementation is simple yet effective, and follows good software engineering practices like modularity and clean separation of concerns.
+1. **Finite State Machine (FSM)**
 
-The challenges encountered included handling decimal numbers correctly and recognizing mathematical functions. Future work could include extending the lexer to support variables and implementing an associated parser to evaluate the tokenized expressions.
+   * The lexer transitions between states based on character classes (digits, operators, letters).
+
+2. **Multi-Type Token Recognition**
+
+   * Supports both numeric and symbolic types (e.g., numbers, operators, functions).
+
+3. **Position Tracking**
+
+   * Each token tracks where it appeared for potential error reporting.
+
+4. **Stream Processing**
+
+   * Characters are processed one-by-one using lookahead via `self.advance()`.
+
+---
+
+### Challenges Encountered
+
+* Handling multiple decimal points in a float (e.g., `3..14`) required careful validation.
+* Differentiating between functions like `sin` and variables involved checking a reserved keyword table.
+
+---
+
+### Future Improvements
+
+* Add **variable support**: allow identifiers beyond reserved keywords.
+* Implement an **expression parser** to evaluate the tokenized expressions.
+* Provide **better error messages** with suggestions for fixes.
+
+---
 
 ## References
 
@@ -118,4 +218,4 @@ The challenges encountered included handling decimal numbers correctly and recog
 
 ## Repository
 
-[GitHub Repository](https://github.com/dmitrycvs/Lexer)
+🔗 [GitHub Repository](https://github.com/dmitrycvs/Lexer)
